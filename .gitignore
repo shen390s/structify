@@ -53,3 +53,9 @@ cabal.project.local~
 mise.toml
 .env
 .env.local
+
+# Generated files (structify output)
+*_generated.h
+*_generated.c
+test_person
+test_multiple
