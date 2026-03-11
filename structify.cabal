@@ -1,0 +1,111 @@
+cabal-version: 3.0
+name: structify
+version: 0.1.0.0
+synopsis: Generate init/cleanup/print/equal/hash functions for C structs
+description:
+    Structify parses C header files with __attribute__((structify(...))) annotations
+    and generates initialization, cleanup, deep copy, print, equality, and hash functions
+    for complex C data structures.
+homepage: https://github.com/yourusername/structify
+license: MIT
+author: Your Name
+maintainer: your.email@example.com
+category: Development
+build-type: Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+common shared-properties
+    default-language: Haskell2010
+    ghc-options:
+        -Wall
+        -Wcompat
+        -Widentities
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns
+        -Wmissing-export-lists
+        -Wmissing-home-modules
+        -Wpartial-fields
+        -Wredundant-constraints
+    build-depends:
+        base >= 4.17 && < 5,
+        language-c >= 0.9.4,
+        language-c-quote >= 0.13,
+        parsec >= 3.1,
+        text >= 2.0,
+        bytestring >= 0.11,
+        containers >= 0.6,
+        mtl >= 2.3,
+        transformers >= 0.6,
+        filepath >= 1.4,
+        directory >= 1.3,
+        pretty-simple >= 4.1
+
+library
+    import: shared-properties
+    hs-source-dirs: src
+    exposed-modules:
+        Structify
+        Structify.Parser.C
+        Structify.Parser.Attribute
+        Structify.Parser.Preprocessor
+        Structify.IR.Types
+        Structify.IR.Enriched
+        Structify.IR.CodeGen
+        Structify.IR.Builder
+        Structify.Analysis.TypeChecker
+        Structify.Analysis.ReferenceResolver
+        Structify.Analysis.CycleDetector
+        Structify.Analysis.Validator
+        Structify.Transform.Enricher
+        Structify.Transform.Optimizer
+        Structify.Transform.Lowering
+        Structify.CodeGen.Init
+        Structify.CodeGen.Cleanup
+        Structify.CodeGen.Copy
+        Structify.CodeGen.Print
+        Structify.CodeGen.Equal
+        Structify.CodeGen.Hash
+        Structify.CodeGen.Validate
+        Structify.CodeGen.Common
+        Structify.CodeGen.Pretty
+        Structify.Error.Types
+        Structify.Error.Reporting
+        Structify.Error.Recovery
+        Structify.CLI.Options
+        Structify.CLI.Commands
+        Structify.CLI.Output
+
+executable structify
+    import: shared-properties
+    main-is: Main.hs
+    hs-source-dirs: app
+    build-depends:
+        structify,
+        optparse-applicative >= 0.18
+    ghc-options:
+        -threaded
+        -rtsopts
+        -with-rtsopts=-N
+
+test-suite structify-test
+    import: shared-properties
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    hs-source-dirs: test
+    other-modules:
+        ParserSpec
+        AttributeSpec
+        EnricherSpec
+        CodeGenSpec
+        ValidatorSpec
+        EndToEndSpec
+    build-depends:
+        structify,
+        hspec >= 2.10,
+        QuickCheck >= 2.14
+    ghc-options:
+        -threaded
+        -rtsopts
+        -with-rtsopts=-N

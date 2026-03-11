@@ -1,0 +1,13 @@
+packages: .
+
+-- Cabal project configuration for Structify
+
+-- Optimization flags
+package structify
+  optimization: True
+
+-- Use newer Cabal features
+index-state: 2024-01-01T00:00:00Z
+
+-- Allow newer versions of dependencies (with caution)
+allow-newer: False
