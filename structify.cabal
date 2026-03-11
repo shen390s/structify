@@ -40,7 +40,8 @@ common shared-properties
         transformers >= 0.6,
         filepath >= 1.4,
         directory >= 1.3,
-        pretty-simple >= 4.1
+        pretty-simple >= 4.1,
+        optparse-applicative >= 0.18
 
 library
     import: shared-properties
