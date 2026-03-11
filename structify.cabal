@@ -61,6 +61,7 @@ library
         Structify.Transform.Enricher
         Structify.Transform.Optimizer
         Structify.Transform.Lowering
+        Structify.CodeGen
         Structify.CodeGen.Init
         Structify.CodeGen.Cleanup
         Structify.CodeGen.Copy
@@ -94,13 +95,6 @@ test-suite structify-test
     type: exitcode-stdio-1.0
     main-is: Spec.hs
     hs-source-dirs: test
-    other-modules:
-        ParserSpec
-        AttributeSpec
-        EnricherSpec
-        CodeGenSpec
-        ValidatorSpec
-        EndToEndSpec
     build-depends:
         structify,
         hspec >= 2.10,
