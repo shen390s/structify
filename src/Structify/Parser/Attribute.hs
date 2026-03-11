@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Parse structify attributes from C AST
+--
+-- Note: This is a simplified implementation.
+-- Full implementation will parse attributes from language-c AST.
 module Structify.Parser.Attribute
   ( -- * Parsing functions
     parseFieldAnnotations
@@ -14,12 +17,8 @@ module Structify.Parser.Attribute
   , defaultStructAnnotations
   ) where
 
-import qualified Language.C as C
-import Language.C.Data.Ident (Ident(..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Maybe (mapMaybe, listToMaybe, fromMaybe)
-import Data.List (find)
 
 -- | Ownership semantics for pointers
 data Ownership
@@ -98,86 +97,16 @@ defaultStructAnnotations = StructAnnotations
   , saHooks = Nothing
   }
 
--- | Parse field-level annotations from C attributes
-parseFieldAnnotations :: [C.CAttr] -> FieldAnnotations
-parseFieldAnnotations attrs =
-  let structifyAttrs = findStructifyAttributes attrs
-  in foldr applyFieldAnnotation defaultFieldAnnotations structifyAttrs
+-- | Parse field-level annotations from attribute strings
+--
+-- TODO: Implement full parsing from language-c CAttr
+-- For now, returns default annotations
+parseFieldAnnotations :: [Text] -> FieldAnnotations
+parseFieldAnnotations _attrs = defaultFieldAnnotations
 
--- | Parse struct-level annotations from C attributes
-parseStructAnnotations :: [C.CAttr] -> StructAnnotations
-parseStructAnnotations attrs =
-  let structifyAttrs = findStructifyAttributes attrs
-  in foldr applyStructAnnotation defaultStructAnnotations structifyAttrs
-
--- | Find all structify attributes in the attribute list
-findStructifyAttributes :: [C.CAttr] -> [C.CAttr]
-findStructifyAttributes = filter isStructifyAttr
-  where
-    isStructifyAttr (C.CAttr (Ident name _ _) _ _) = name == "structify"
-
--- | Apply a single structify attribute to field annotations
-applyFieldAnnotation :: C.CAttr -> FieldAnnotations -> FieldAnnotations
-applyFieldAnnotation (C.CAttr _ exprs _) annots =
-  foldr processExpr annots exprs
-  where
-    processExpr expr acc = case expr of
-      -- Simple identifiers: owned, borrowed, shared, deep_copy, no_copy, etc.
-      C.CVar (Ident name _ _) _ -> case name of
-        "owned" -> acc { faOwnership = Just Owned }
-        "borrowed" -> acc { faOwnership = Just Borrowed }
-        "shared" -> acc { faOwnership = Just Shared }
-        "deep_copy" -> acc { faDeepCopy = True }
-        "no_copy" -> acc { faNoCopy = True }
-        "no_print" -> acc { faNoPrint = True }
-        "no_equal" -> acc { faNoEqual = True }
-        "no_hash" -> acc { faNoHash = True }
-        _ -> acc
-
-      -- Key-value pairs: default="value", length="field", etc.
-      C.CAssign C.CAssignOp (C.CVar (Ident key _ _) _) value _ -> case key of
-        "default" -> acc { faDefault = extractStringLiteral value }
-        "length" -> acc { faLengthField = extractStringLiteral value }
-        "init" -> acc { faCustomInit = extractStringLiteral value }
-        "cleanup" -> acc { faCustomCleanup = extractStringLiteral value }
-        "print_format" -> acc { faPrintFormat = extractStringLiteral value }
-        "hash" -> acc { faCustomHash = extractStringLiteral value }
-        "allocator" -> acc { faAllocator = extractStringLiteral value }
-        "deallocator" -> acc { faDeallocator = extractStringLiteral value }
-        _ -> acc
-
-      _ -> acc
-
--- | Apply a single structify attribute to struct annotations
-applyStructAnnotation :: C.CAttr -> StructAnnotations -> StructAnnotations
-applyStructAnnotation (C.CAttr _ exprs _) annots =
-  foldr processExpr annots exprs
-  where
-    processExpr expr acc = case expr of
-      -- Simple identifiers: no_init, no_cleanup, etc.
-      C.CVar (Ident name _ _) _ -> case name of
-        "no_init" -> acc { saNoInit = True }
-        "no_cleanup" -> acc { saNoCleanup = True }
-        "no_copy" -> acc { saNoCopy = True }
-        "no_print" -> acc { saNoPrint = True }
-        "no_equal" -> acc { saNoEqual = True }
-        "no_hash" -> acc { saNoHash = True }
-        _ -> acc
-
-      -- Key-value pairs: pre_init="func", post_init="func", etc.
-      C.CAssign C.CAssignOp (C.CVar (Ident key _ _) _) value _ -> case key of
-        "pre_init" -> acc { saPreInit = extractStringLiteral value }
-        "post_init" -> acc { saPostInit = extractStringLiteral value }
-        "pre_cleanup" -> acc { saPreCleanup = extractStringLiteral value }
-        "post_cleanup" -> acc { saPostCleanup = extractStringLiteral value }
-        "print_name" -> acc { saPrintName = extractStringLiteral value }
-        "hooks" -> acc { saHooks = extractStringLiteral value }
-        _ -> acc
-
-      _ -> acc
-
--- | Extract string literal from C expression
-extractStringLiteral :: C.CExpr -> Maybe Text
-extractStringLiteral (C.CConst (C.CStrConst (C.CString str _) _)) =
-  Just (T.pack str)
-extractStringLiteral _ = Nothing
+-- | Parse struct-level annotations from attribute strings
+--
+-- TODO: Implement full parsing from language-c CAttr
+-- For now, returns default annotations
+parseStructAnnotations :: [Text] -> StructAnnotations
+parseStructAnnotations _attrs = defaultStructAnnotations
