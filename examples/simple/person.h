@@ -5,10 +5,10 @@
 #include <stddef.h>
 
 typedef struct Person {
-    char* name __attribute__((structify(owned, default="NULL")));
-    int age __attribute__((structify(default="0")));
-    struct Person** children __attribute__((structify(owned, length="num_children", deep_copy)));
-    size_t num_children __attribute__((structify(default="0")));
+    char* name;
+    int age;
+    struct Person** children;
+    size_t num_children;
 } Person;
 
 #endif // PERSON_H
