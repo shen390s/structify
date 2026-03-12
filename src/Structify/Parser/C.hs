@@ -73,25 +73,45 @@ data CType
 -- | Parse a C header file
 parseHeader :: FilePath -> IO (Either ParseError ParseResult)
 parseHeader path = do
-  -- Use parseCFile which handles preprocessing
-  result <- LC.parseCFilePre path
-  case result of
-    Left err -> return $ Left $ ParseError
-      { peMessage = T.pack $ show err
-      , peFile = Just path
-      , peRow = Nothing
-      , peColumn = Nothing
-      }
-    Right (LC.CTranslUnit decls _) -> do
-      -- Extract structs from declarations
-      let structs = mapMaybe extractStruct decls
-      let typedefs = mapMaybe extractTypedef decls
-      let enums = mapMaybe extractEnum decls
-      return $ Right $ ParseResult
-        { prStructs = structs
-        , prTypedefs = typedefs
-        , prEnums = enums
-        }
+  -- Read the file and preprocess it
+  content <- TIO.readFile path
+  let preprocessed = simplePreprocess content
+  return $ parseHeaderFromString path preprocessed
+
+-- | Simple preprocessor that removes common directives that cause issues
+-- but preserves the actual C code
+simplePreprocess :: Text -> Text
+simplePreprocess content =
+  let -- First remove multi-line /* */ comments
+      withoutBlockComments = removeBlockComments content
+      -- Then process line by line
+      lines' = T.lines withoutBlockComments
+      -- Remove preprocessor directives but keep the code
+      filtered = filter (not . isPreprocessorDirective) lines'
+      -- Remove // comments from end of lines
+      withoutLineComments = map removeLineComment filtered
+  in T.unlines withoutLineComments
+  where
+    isPreprocessorDirective line =
+      let trimmed = T.stripStart line
+      in not (T.null trimmed) && T.head trimmed == '#'
+
+    -- Remove // comments from end of line
+    removeLineComment line =
+      case T.breakOn "//" line of
+        (before, after) | T.null after -> line
+                       | otherwise -> T.stripEnd before
+
+    -- Remove /* */ block comments
+    removeBlockComments text =
+      case T.breakOn "/*" text of
+        (before, after) | T.null after -> text
+                       | otherwise ->
+                           case T.breakOn "*/" after of
+                             (_, after2) | T.null after2 -> before  -- Unclosed comment
+                                        | otherwise ->
+                                            let rest = T.drop 2 after2  -- Skip */
+                                            in before <> " " <> removeBlockComments rest
 
 -- | Parse C header from string
 parseHeaderFromString :: FilePath -> Text -> Either ParseError ParseResult

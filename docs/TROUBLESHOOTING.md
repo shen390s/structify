@@ -92,72 +92,57 @@ nix develop --command cabal build --enable-tests
 
 ### Problem: Preprocessor directives not supported
 
-```
-Error: Parse error: Lexical error! The character '#' does not fit here.
-```
+**Status**: ✅ **FIXED** - Basic preprocessor support now available!
 
-**Solution**:
+Structify now automatically strips common preprocessor directives (`#ifndef`, `#define`, `#include`, etc.) and handles both `//` and `/* */` style comments.
 
-Structify's parser has limited preprocessor support. Options:
-
-**Option 1**: Remove preprocessor directives:
-
-❌ **This won't work**:
+**What works**:
 ```c
-#ifndef PERSON_H
-#define PERSON_H
+#ifndef PERSON_H  // ← Removed automatically
+#define PERSON_H  // ← Removed automatically
 
+// This comment is handled
 typedef struct Person {
-    char* name;
+    char* name;  // Inline comment works
+    int age;     /* Block comment works */
 } Person;
 
-#endif
+#endif  // ← Removed automatically
 ```
 
-✅ **This will work**:
+**Limitation**: `#include` files are stripped, so types from included headers won't be known.
+
+**Workaround for includes**:
 ```c
-typedef struct Person {
-    char* name;
-} Person;
-```
+// Instead of: #include <stddef.h>
+// Use built-in size_t equivalent:
+typedef unsigned long size_t;  // Define in same file
 
-**Option 2**: Preprocess first (future):
-
-```bash
-gcc -E person.h -o person_preprocessed.h
-structify generate person_preprocessed.h
+typedef struct {
+    size_t count;  // Now parser knows size_t
+} Array;
 ```
 
 ### Problem: Comments cause parse errors
 
-```
-Error: Syntax Error! The symbol '/' does not fit here.
-```
+**Status**: ✅ **FIXED** - Comments are now supported!
 
-**Solution**:
+Both C and C++ style comments are handled:
 
-Remove comments from your header before generating:
-
-❌ **This may fail**:
 ```c
-// This is a person struct
+// C++ style comments work
 typedef struct Person {
-    char* name;  // Person's name
+    char* name;  // Inline comments work
+    int age;     /* C-style comments work */
 } Person;
+
+/* Multi-line
+ * block comments
+ * also work
+ */
 ```
 
-✅ **This will work**:
-```c
-typedef struct Person {
-    char* name;
-} Person;
-```
-
-Or use the parser without preprocessing:
-
-```bash
-structify generate person.h
-```
+No action needed - comments are automatically removed during parsing.
 
 ### Problem: Complex types not recognized
 

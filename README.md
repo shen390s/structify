@@ -367,10 +367,12 @@ structify/
 
 ## Known Limitations
 
-- Parser uses simplified type handling (full preprocessor support deferred)
-- Annotations not yet fully integrated (code generation works with defaults)
-- No union support yet
-- No validation function generation yet
+- Parser uses simplified type handling
+- Some complex types may not be fully supported (unions, complex function pointers)
+- `#include` directives are stripped (types from included files won't be known)
+  - Workaround: Use built-in types or define types in the same file
+
+Note: **Comments and basic preprocessor directives are now supported!**
 
 See [docs/TASKS.md](docs/TASKS.md) for roadmap.
 
