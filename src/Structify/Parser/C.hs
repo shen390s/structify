@@ -73,13 +73,30 @@ data CType
 -- | Parse a C header file
 parseHeader :: FilePath -> IO (Either ParseError ParseResult)
 parseHeader path = do
-  content <- TIO.readFile path
-  return $ parseHeaderFromString path content
+  -- Use parseCFile which handles preprocessing
+  result <- LC.parseCFilePre path
+  case result of
+    Left err -> return $ Left $ ParseError
+      { peMessage = T.pack $ show err
+      , peFile = Just path
+      , peRow = Nothing
+      , peColumn = Nothing
+      }
+    Right (LC.CTranslUnit decls _) -> do
+      -- Extract structs from declarations
+      let structs = mapMaybe extractStruct decls
+      let typedefs = mapMaybe extractTypedef decls
+      let enums = mapMaybe extractEnum decls
+      return $ Right $ ParseResult
+        { prStructs = structs
+        , prTypedefs = typedefs
+        , prEnums = enums
+        }
 
 -- | Parse C header from string
 parseHeaderFromString :: FilePath -> Text -> Either ParseError ParseResult
 parseHeaderFromString filename content = do
-  -- Parse using language-c
+  -- Parse using language-c (without preprocessing)
   let inputStream = LC.inputStreamFromString (T.unpack content)
   case LC.parseC inputStream (Pos.initPos filename) of
     Left err -> Left $ ParseError

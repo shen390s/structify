@@ -136,6 +136,7 @@ generateTypeDefaultPrint accessor fieldType annots = case fieldType of
           "long" -> "%ld"
           "short" -> "%hd"
           "char" -> "%c"
+          "unsigned" -> "%lu"  -- Default unsigned to unsigned long
           "unsigned int" -> "%u"
           "unsigned long" -> "%lu"
           "unsigned short" -> "%hu"
