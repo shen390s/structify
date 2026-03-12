@@ -2,6 +2,7 @@
 #define PERSON_TEST_H
 
 #include <stddef.h>
+typedef unsigned long size_t;  // Define locally for parser
 
 #ifndef __attribute__
 #define __attribute__(x)

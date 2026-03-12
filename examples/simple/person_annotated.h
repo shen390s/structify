@@ -3,6 +3,7 @@
 #define PERSON_ANNOTATED_H
 
 #include <stddef.h>
+typedef unsigned long size_t;  // Define locally for parser
 
 // Portability macros for MSVC
 #ifndef __attribute__

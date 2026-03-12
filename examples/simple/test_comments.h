@@ -3,6 +3,7 @@
 #define SIMPLE_TEST_H
 
 #include <stddef.h>
+typedef unsigned long size_t;  // Define locally for parser
 
 /* Multi-line comment
  * This should be handled

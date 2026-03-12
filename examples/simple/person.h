@@ -3,6 +3,7 @@
 #define PERSON_H
 
 #include <stddef.h>
+typedef unsigned long size_t;  // Define locally for parser
 
 typedef struct Person {
     char* name;
