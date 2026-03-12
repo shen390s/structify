@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Maybe (mapMaybe, catMaybes)
 import Data.List (find)
+import qualified Data.Map.Strict as Map
 
 -- language-c imports (package-qualified to avoid conflicts with language-c-quote)
 import qualified "language-c" Language.C as LC
@@ -113,11 +114,58 @@ simplePreprocess content =
                                             let rest = T.drop 2 after2  -- Skip */
                                             in before <> " " <> removeBlockComments rest
 
+-- | Extract and remove structify attributes from source code
+-- Returns cleaned source and a map of marker -> attribute content
+extractStructifyAttributes :: Text -> (Text, Map.Map Text Text)
+extractStructifyAttributes content =
+  let (cleanedContent, attrList) = go 0 content []
+      attrMap = Map.fromList attrList
+  in (cleanedContent, attrMap)
+  where
+    go :: Int -> Text -> [(Text, Text)] -> (Text, [(Text, Text)])
+    go n text accAttrs
+      | "__attribute__((structify" `T.isInfixOf` text =
+          let (before, rest) = T.breakOn "__attribute__((structify" text
+              -- Find matching closing parentheses for the attribute
+              afterAttr = T.drop (T.length "__attribute__((structify") rest
+              (attrContent, after) = extractBalancedParens afterAttr 0
+              -- Create a unique marker that language-c can parse
+              marker = "__attribute__((annotate(\"STRUCTIFY_ATTR_" <> T.pack (show n) <> "\")))"
+              -- Store the attribute content
+              attr = "structify(" <> attrContent <> ")"
+              -- Continue processing the rest
+              (restCleaned, restAttrs) = go (n + 1) after ((T.pack ("\"STRUCTIFY_ATTR_" ++ show n ++ "\""), attr) : accAttrs)
+          in (before <> marker <> restCleaned, restAttrs)
+      | otherwise = (text, accAttrs)
+
+    -- Extract content until balanced parentheses
+    extractBalancedParens :: Text -> Int -> (Text, Text)
+    extractBalancedParens text depth
+      | T.null text = ("", "")
+      | otherwise =
+          let c = T.head text
+              rest = T.tail text
+          in case c of
+               '(' -> let (content, after) = extractBalancedParens rest (depth + 1)
+                      in (T.cons c content, after)
+               ')' ->
+                 if depth == 0
+                 then ("", rest)  -- End of structify()
+                 else if depth == 1
+                 then ("", T.dropWhile (== ')') rest)  -- Skip final )) for __attribute__
+                 else let (content, after) = extractBalancedParens rest (depth - 1)
+                      in (T.cons c content, after)
+               _   -> let (content, after) = extractBalancedParens rest depth
+                      in (T.cons c content, after)
+
 -- | Parse C header from string
 parseHeaderFromString :: FilePath -> Text -> Either ParseError ParseResult
 parseHeaderFromString filename content = do
+  -- Extract structify attributes before parsing
+  let (cleanedContent, attrMap) = extractStructifyAttributes content
+
   -- Parse using language-c (without preprocessing)
-  let inputStream = LC.inputStreamFromString (T.unpack content)
+  let inputStream = LC.inputStreamFromString (T.unpack cleanedContent)
   case LC.parseC inputStream (Pos.initPos filename) of
     Left err -> Left $ ParseError
       { peMessage = T.pack $ show err
@@ -126,8 +174,8 @@ parseHeaderFromString filename content = do
       , peColumn = Nothing
       }
     Right (LC.CTranslUnit decls _) -> do
-      -- Extract structs from declarations
-      let structs = mapMaybe extractStruct decls
+      -- Extract structs from declarations and reattach attributes
+      let structs = mapMaybe (extractStruct attrMap) decls
       let typedefs = mapMaybe extractTypedef decls
       let enums = mapMaybe extractEnum decls
       Right $ ParseResult
@@ -137,26 +185,35 @@ parseHeaderFromString filename content = do
         }
 
 -- | Extract struct declaration from C declaration
-extractStruct :: LC.CExtDecl -> Maybe CStructDecl
-extractStruct (LC.CDeclExt (LC.CDecl specs declarators _)) = do
+extractStruct :: Map.Map Text Text -> LC.CExtDecl -> Maybe CStructDecl
+extractStruct attrMap (LC.CDeclExt (LC.CDecl specs declarators _)) = do
   -- Look for struct in declaration specifiers
   structSpec <- find isStructSpec specs
   case structSpec of
     LC.CTypeSpec (LC.CSUType (LC.CStruct LC.CStructTag (Just ident) (Just fields) attrs _) _) -> do
       let name = T.pack $ Ident.identToString ident
-      let fieldDecls = concatMap extractFields fields
-      let attrStrs = map (T.pack . show) attrs
+      let fieldDecls = concatMap (extractFields attrMap) fields
+      -- Extract attributes from the parsed AST first
+      let parsedAttrs = map extractAttributeString attrs
+      -- Check if any parsed attr is a marker and look it up
+      let resolvedAttrs = map (resolveAttr attrMap) parsedAttrs
       Just $ CStructDecl
         { csdName = name
         , csdFields = fieldDecls
-        , csdAttributes = attrStrs
+        , csdAttributes = resolvedAttrs
         , csdLocation = Nothing  -- TODO: extract position
         }
     _ -> Nothing
   where
     isStructSpec (LC.CTypeSpec (LC.CSUType (LC.CStruct LC.CStructTag _ _ _ _) _)) = True
     isStructSpec _ = False
-extractStruct _ = Nothing
+
+    resolveAttr :: Map.Map Text Text -> Text -> Text
+    resolveAttr m attr =
+      case Map.lookup attr m of
+        Just resolved -> resolved
+        Nothing -> attr
+extractStruct _ _ = Nothing
 
 -- | Extract typedef declaration
 extractTypedef :: LC.CExtDecl -> Maybe (Text, CType)
@@ -194,30 +251,39 @@ extractEnum (LC.CDeclExt (LC.CDecl specs _ _)) = do
 extractEnum _ = Nothing
 
 -- | Extract fields from struct declaration
-extractFields :: LC.CDecl -> [CFieldDecl]
-extractFields (LC.CDecl specs declarators _) = do
+extractFields :: Map.Map Text Text -> LC.CDecl -> [CFieldDecl]
+extractFields attrMap (LC.CDecl specs declarators _) = do
   let baseType = extractTypeFromSpecs specs
   case baseType of
     Nothing -> []
-    Just ty -> mapMaybe (extractField ty) declarators
+    Just ty -> mapMaybe (extractField attrMap ty) declarators
 
 -- | Extract a single field from declarator
-extractField :: CType -> (Maybe LC.CDeclr, Maybe LC.CInit, Maybe LC.CExpr) -> Maybe CFieldDecl
-extractField baseType (Just (LC.CDeclr (Just ident) derivedDecls _ attrs _), _, bitField) = do
+extractField :: Map.Map Text Text -> CType -> (Maybe LC.CDeclr, Maybe LC.CInit, Maybe LC.CExpr) -> Maybe CFieldDecl
+extractField attrMap baseType (Just (LC.CDeclr (Just ident) derivedDecls _ attrs _), _, bitField) = do
   let name = T.pack $ Ident.identToString ident
   let fieldType = applyDerivedDecls baseType derivedDecls
-  let attrStrs = map (T.pack . show) attrs
+  -- Extract attributes from the parsed AST
+  let parsedAttrs = map extractAttributeString attrs
+  -- Resolve any markers to actual attribute content
+  let resolvedAttrs = map (resolveAttr attrMap) parsedAttrs
   let bitFieldSize = case bitField of
         Just (LC.CConst (LC.CIntConst (LC.CInteger val _ _) _)) -> Just (fromInteger val)
         _ -> Nothing
   Just $ CFieldDecl
     { cfdName = name
     , cfdType = fieldType
-    , cfdAttributes = attrStrs
+    , cfdAttributes = resolvedAttrs
     , cfdBitField = bitFieldSize
     , cfdLocation = Nothing  -- TODO: extract position
     }
-extractField _ _ = Nothing
+  where
+    resolveAttr :: Map.Map Text Text -> Text -> Text
+    resolveAttr m attr =
+      case Map.lookup attr m of
+        Just resolved -> resolved
+        Nothing -> attr
+extractField _ _ _ = Nothing
 
 -- | Extract base type from declaration specifiers
 extractTypeFromSpecs :: [LC.CDeclSpec] -> Maybe CType
@@ -253,3 +319,45 @@ applyDerivedDecl ty (LC.CArrDeclr _ (LC.CArrSize _ (LC.CConst (LC.CIntConst (LC.
   CArray ty (Just val)
 applyDerivedDecl ty (LC.CArrDeclr _ _ _) = CArray ty Nothing
 applyDerivedDecl _ (LC.CFunDeclr _ _ _) = CFunctionPtr
+
+-- | Extract attribute string from language-c attribute
+-- Converts LC.CAttr to a string representation that the Attribute parser can handle
+extractAttributeString :: LC.CAttr -> Text
+extractAttributeString attr = case attr of
+  LC.CAttr ident exprs _ ->
+    let attrName = T.pack $ Ident.identToString ident
+    in if attrName == "annotate" && length exprs == 1
+       then -- This is our marker attribute, extract the marker string
+            extractExprString (head exprs)
+       else -- Regular attribute
+            let attrArgs = extractAttrArgs exprs
+            in if T.null attrArgs
+               then attrName
+               else attrName <> "(" <> attrArgs <> ")"
+
+-- | Extract attribute arguments from expressions
+extractAttrArgs :: [LC.CExpr] -> Text
+extractAttrArgs [] = ""
+extractAttrArgs exprs = T.intercalate "," $ map extractExprString exprs
+
+-- | Convert expression to string representation
+extractExprString :: LC.CExpr -> Text
+extractExprString expr = case expr of
+  -- Identifier (like 'owned', 'borrowed', etc.)
+  LC.CVar ident _ -> T.pack $ Ident.identToString ident
+
+  -- String literal
+  LC.CConst (LC.CStrConst cstr _) ->
+    let (LC.CString str _) = cstr
+    in "\"" <> T.pack str <> "\""
+
+  -- Integer constant
+  LC.CConst (LC.CIntConst (LC.CInteger val _ _) _) ->
+    T.pack $ show val
+
+  -- Assignment or other binary operations (used for key=value syntax)
+  LC.CAssign _ left right _ ->
+    extractExprString left <> "=" <> extractExprString right
+
+  -- Member access or other complex expressions - fallback to string
+  _ -> T.pack $ show expr
