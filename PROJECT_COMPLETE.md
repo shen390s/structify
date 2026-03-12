@@ -404,7 +404,7 @@ a6996b2 Fix header guard collision
 ### How to Use
 
 ```bash
-git clone https://github.com/yourusername/structify.git
+git clone https://github.com/shen390s/structify.git
 cd structify
 nix develop
 cabal build
@@ -427,8 +427,8 @@ Areas that need help:
 
 ### Support
 
-- 🐛 [Report issues](https://github.com/yourusername/structify/issues)
-- 💬 [Discussions](https://github.com/yourusername/structify/discussions)
+- 🐛 [Report issues](https://github.com/shen390s/structify/issues)
+- 💬 [Discussions](https://github.com/shen390s/structify/discussions)
 - 📖 [Documentation](docs/)
 
 ---

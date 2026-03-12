@@ -567,9 +567,9 @@ If you're still stuck:
 
 1. **Check examples**: See [`examples/`](../examples/) for working code
 2. **Read docs**: Full documentation in [`docs/`](../)
-3. **Search issues**: Check [GitHub issues](https://github.com/yourusername/structify/issues)
-4. **Ask questions**: Open a [discussion](https://github.com/yourusername/structify/discussions)
-5. **Report bugs**: File an [issue](https://github.com/yourusername/structify/issues/new)
+3. **Search issues**: Check [GitHub issues](https://github.com/shen390s/structify/issues)
+4. **Ask questions**: Open a [discussion](https://github.com/shen390s/structify/discussions)
+5. **Report bugs**: File an [issue](https://github.com/shen390s/structify/issues/new)
 
 ### When Reporting Issues
 

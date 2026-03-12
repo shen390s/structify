@@ -6,7 +6,7 @@ description:
     Structify parses C header files with __attribute__((structify(...))) annotations
     and generates initialization, cleanup, deep copy, print, equality, and hash functions
     for complex C data structures.
-homepage: https://github.com/yourusername/structify
+homepage: https://github.com/shen390s/structify
 license: MIT
 author: Your Name
 maintainer: your.email@example.com

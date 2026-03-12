@@ -26,7 +26,7 @@ This tutorial walks you through using Structify to generate C boilerplate code f
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/structify.git
+git clone https://github.com/shen390s/structify.git
 cd structify
 
 # Enter development environment

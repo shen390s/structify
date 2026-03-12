@@ -4,8 +4,8 @@
 
 Generate init, cleanup, copy, print, equality, and hash functions for C structs automatically.
 
-[![Status](https://img.shields.io/badge/status-beta-yellow)](https://github.com/yourusername/structify)
-[![Phase](https://img.shields.io/badge/phase-4%2F5%20complete-brightgreen)](docs/TASKS.md)
+[![Status](https://img.shields.io/badge/status-production--ready-brightgreen)](https://github.com/shen390s/structify)
+[![Phase](https://img.shields.io/badge/phase-5%2F5%20complete-brightgreen)](docs/TASKS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ## Overview
@@ -27,7 +27,7 @@ Structify is a Haskell-based code generator that parses C struct definitions and
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/structify.git
+git clone https://github.com/shen390s/structify.git
 cd structify
 
 # Enter Nix development environment
@@ -210,7 +210,7 @@ Supported annotations:
 - **Selective generation**: `no_copy`, `no_print`, `no_equal`, `no_hash`
 - **Hooks**: `pre_init`, `post_init`, `pre_cleanup`, `post_cleanup`
 
-See [docs/ANNOTATIONS.md](docs/ANNOTATIONS.md) for full reference (coming soon).
+See [docs/ANNOTATIONS.md](docs/ANNOTATIONS.md) for full reference.
 
 ## Examples
 
@@ -294,9 +294,9 @@ All tests currently passing ✅
 | Phase 2 | ✅ Complete | IR construction and parser |
 | Phase 3 | ✅ Complete | All 6 code generators |
 | Phase 4 | ✅ Complete | CLI and testing |
-| Phase 5 | 🔄 In Progress | Documentation and polish |
+| Phase 5 | ✅ Complete | Documentation and polish |
 
-**Current version**: Beta (80% complete)
+**Current version**: Production Ready (100% complete)
 
 See [docs/TASKS.md](docs/TASKS.md) for detailed progress.
 
@@ -358,7 +358,11 @@ structify/
 
 - [Implementation Plan](docs/PLAN.md) - Complete architecture and design
 - [Task List](docs/TASKS.md) - Development progress
+- [Tutorial](docs/TUTORIAL.md) - Step-by-step learning guide
+- [Annotation Reference](docs/ANNOTATIONS.md) - Complete annotation guide
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common problems and solutions
 - [Phase 4 Report](docs/PHASE4_COMPLETE.md) - CLI and testing completion
+- [Phase 5 Report](docs/PHASE5_COMPLETE.md) - Documentation completion
 - [Usage Guide](docs/USAGE.md) - Detailed usage examples
 
 ## Known Limitations
@@ -394,9 +398,9 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-- 🐛 [Report issues](https://github.com/yourusername/structify/issues)
+- 🐛 [Report issues](https://github.com/shen390s/structify/issues)
 - 📖 [Read the docs](docs/)
-- 💬 [Discussions](https://github.com/yourusername/structify/discussions)
+- 💬 [Discussions](https://github.com/shen390s/structify/discussions)
 
 ---
 
