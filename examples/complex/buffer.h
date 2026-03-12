@@ -5,6 +5,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Define types locally for parser (includes are stripped)
+typedef unsigned char uint8_t;
+typedef unsigned long size_t;
+
 typedef struct Buffer {
     uint8_t* data __attribute__((structify(owned, length="size", allocator="custom_alloc", deallocator="custom_free")));
     size_t size __attribute__((structify(default="0")));
