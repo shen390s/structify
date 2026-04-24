@@ -19,10 +19,9 @@ module Structify.CodeGen.Init
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Maybe (isJust, fromMaybe)
-import Data.List (intercalate)
 
 import Structify.IR.Types
+import Structify.CodeGen.Common (cNullCheck, cTypeDefault, isPrimitiveFloat, structFuncName, assembleFunction)
 
 -- | Generated init code
 data InitCode = InitCode

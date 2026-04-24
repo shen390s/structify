@@ -21,7 +21,6 @@ module Structify.CodeGen.Equal
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.List (sortBy)
-import Data.Ord (comparing)
 
 import Structify.IR.Types
 

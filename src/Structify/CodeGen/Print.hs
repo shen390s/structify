@@ -21,6 +21,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Structify.IR.Types
+import Structify.CodeGen.Common (cFormatSpecifier, structFuncName)
 
 -- | Generated print code
 data PrintCode = PrintCode
@@ -131,27 +132,7 @@ generateTypePrint accessor fieldType annots =
 generateTypeDefaultPrint :: Text -> EnrichedType -> FieldAnnotations -> Text
 generateTypeDefaultPrint accessor fieldType annots = case fieldType of
   PrimitiveType typeName ->
-    let format = case typeName of
-          "int" -> "%d"
-          "long" -> "%ld"
-          "short" -> "%hd"
-          "char" -> "%c"
-          "unsigned" -> "%lu"  -- Default unsigned to unsigned long
-          "unsigned int" -> "%u"
-          "unsigned long" -> "%lu"
-          "unsigned short" -> "%hu"
-          "size_t" -> "%zu"
-          "uint8_t" -> "%\" PRIu8 \""
-          "uint16_t" -> "%\" PRIu16 \""
-          "uint32_t" -> "%\" PRIu32 \""
-          "uint64_t" -> "%\" PRIu64 \""
-          "int8_t" -> "%\" PRId8 \""
-          "int16_t" -> "%\" PRId16 \""
-          "int32_t" -> "%\" PRId32 \""
-          "int64_t" -> "%\" PRId64 \""
-          "float" -> "%f"
-          "double" -> "%lf"
-          _ -> "%d"
+    let format = cFormatSpecifier typeName
     in "    fprintf(out, \"" <> format <> "\", " <> accessor <> ");\n"
 
   PointerType innerType _ ->
@@ -209,13 +190,7 @@ generateTypeDefaultPrint accessor fieldType annots = case fieldType of
 
           PrimitiveType typeName ->
             -- Array of primitives
-            let format = case typeName of
-                  "int" -> "%d"
-                  "long" -> "%ld"
-                  "float" -> "%f"
-                  "double" -> "%lf"
-                  "char" -> "%c"
-                  _ -> "%d"
+            let format = cFormatSpecifier typeName
             in "    fprintf(out, \"[\");\n" <>
                "    for (size_t i = 0; i < self->" <> lengthField <> "; i++) {\n" <>
                "        if (i > 0) fprintf(out, \", \");\n" <>

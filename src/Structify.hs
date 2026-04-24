@@ -21,10 +21,9 @@ module Structify
 import Data.Text (Text)
 import qualified Data.Text as T
 import Structify.IR.Types
-import Structify.Parser.C (ParseResult, ParseError, parseHeader, parseHeaderFromString)
+import Structify.Parser.C (ParseResult, ParseError, parseHeader)
 import Structify.Transform.Enricher (EnrichmentError, enrichStructs)
 import Structify.CodeGen (generateAllFunctions, GeneratedCode(..))
-import qualified Structify.Parser.C as C
 
 -- | Parse and enrich a C header file
 enrichHeader :: FilePath -> IO (Either String [EnrichedStruct])

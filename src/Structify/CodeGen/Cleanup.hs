@@ -19,10 +19,9 @@ module Structify.CodeGen.Cleanup
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Maybe (isJust, fromMaybe)
-import Data.List (intercalate)
 
 import Structify.IR.Types
+import Structify.CodeGen.Common (cNullCheckVoid, structFuncName, assembleFunction)
 
 -- | Generated cleanup code
 data CleanupCode = CleanupCode
